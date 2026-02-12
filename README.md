@@ -187,7 +187,7 @@ Security group for the EC2 peer (minimal):
 
 This script runs on the homelab host (`infra01`). It checks the **latest handshake age** for the EC2 peer **from inside the WireGuard container**, and only “pings” Kuma when healthy.
 
-**File:** `[scripts/wg-ec2-probe](./scripts/wg-ec2-probe)` (install to `/usr/local/bin/wg-ec2-probe`)
+**File:** [scripts/wg-ec2-probe](./scripts/wg-ec2-probe) (install to `/usr/local/bin/wg-ec2-probe`)
 
 In Kuma:
 
