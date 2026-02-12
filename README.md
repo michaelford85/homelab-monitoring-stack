@@ -1,215 +1,438 @@
 # homelab-monitoring-stack
 
-> Infrastructure monitoring, alerting, and remote tunnel validation for
-> a Docker-based homelab using Uptime Kuma, WireGuard, and systemd.
+![Status](https://img.shields.io/badge/status-active-success)
+![Platform](https://img.shields.io/badge/platform-homelab-informational)
+![Monitoring](https://img.shields.io/badge/monitoring-uptime--kuma-blue)
+![VPN](https://img.shields.io/badge/vpn-wireguard-9cf)
+![OS](https://img.shields.io/badge/os-Ubuntu%2022.04-orange)
+![Automation](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
 
-------------------------------------------------------------------------
+> Infrastructure monitoring, alerting, and remote tunnel validation for a Docker-based homelab using Uptime Kuma, WireGuard, systemd timers, Slack, and AWS.
 
-## Overview
+This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add an external WireGuard probe (EC2), and wire up host scripts + systemd timers.
 
-This repository documents the monitoring architecture for my homelab
-environment.\
-It includes:
+---
 
--   Uptime Kuma deployment
--   Monitor configuration strategy
--   Slack alerting setup
--   WireGuard remote tunnel validation via EC2
--   Health check scripts
--   systemd services and timers
+## Table of contents
 
-The goal is repeatable infrastructure monitoring setup in case the
-environment ever needs to be rebuilt.
+- [Architecture](#architecture)
+- [Uptime Kuma](#uptime-kuma)
+  - [Install](#install)
+  - [Slack notifications](#slack-notifications)
+  - [Monitor inventory](#monitor-inventory)
+  - [Recommended intervals and retries](#recommended-intervals-and-retries)
+- [WireGuard remote probe (EC2)](#wireguard-remote-probe-ec2)
+  - [Why an external probe](#why-an-external-probe)
+  - [EC2 peer config notes](#ec2-peer-config-notes)
+  - [Host-side probe script (push monitor)](#host-side-probe-script-push-monitor)
+  - [systemd service + timer](#systemd-service--timer)
+- [Daily Slack summary](#daily-slack-summary)
+  - [Daily summary script](#daily-summary-script)
+  - [systemd service + timer](#systemd-service--timer-1)
+- [AWS nightly stop Lambda exclusion](#aws-nightly-stop-lambda-exclusion)
+- [Repo layout](#repo-layout)
+- [Recovery checklist](#recovery-checklist)
 
-------------------------------------------------------------------------
+---
 
-# Architecture Summary
+## Architecture
 
-Monitoring Layers:
+```mermaid
+flowchart LR
+  subgraph Home["Home Network (LAN)"]
+    KU[Uptime Kuma<br/>Docker container]
+    WG[WireGuard<br/>Docker container]
+    SVC[Services<br/>Jellyfin / Audiobookshelf / UniFi / Pi-hole]
+    SYS[Host scripts<br/>systemd timers]
+  end
 
-1.  Container Health (Docker status)
-2.  HTTP Health (Service availability)
-3.  DNS Resolution (Pi-hole functionality)
-4.  WAN Connectivity (External reachability)
-5.  WireGuard Remote Probe (True end-to-end tunnel validation)
-6.  Daily System Summary (Slack report)
-7.  Real-time Slack Alerts
+  subgraph Slack["Slack Workspace"]
+    CH1["#daily-network-service-summary"]
+    CH2["#network-service-alerts"]
+  end
 
-------------------------------------------------------------------------
+  subgraph AWS["AWS"]
+    EC2[EC2 WireGuard Peer<br/>Always-on probe]
+    LAMBDA[Nightly Stop Lambda<br/>excludes AlwaysOn=true]
+  end
 
-# Uptime Kuma Setup
+  KU -- "HTTP/DNS/Container/WAN monitors" --> SVC
+  KU -- "real-time alerts" --> CH2
+  SYS -- "daily summary webhook" --> CH1
 
-## Docker Deployment
+  EC2 -- "WireGuard tunnel (PersistentKeepalive=25)" --> WG
+  SYS -- "checks handshake age in WG container" --> WG
+  SYS -- "push heartbeat to Kuma (Push monitor)" --> KU
 
-``` bash
+  LAMBDA -. "stops instances except AlwaysOn=true" .-> EC2
+```
+
+---
+
+## Uptime Kuma
+
+### Install
+
+```bash
 docker run -d \
   --name uptime-kuma \
+  --restart=always \
   -p 3001:3001 \
   -v uptime-kuma:/app/data \
-  --restart=always \
   louislam/uptime-kuma:latest
 ```
 
-Access via:
+Open:
 
-http://`<server-ip>`{=html}:3001
+- `http://<server-ip>:3001`
 
-------------------------------------------------------------------------
+### Slack notifications
 
-# Monitor Categories & Recommended Settings
+Create two Slack incoming webhooks:
 
-  Category           Interval   Retries   Notes
-  ------------------ ---------- --------- -----------------------------------------
-  HTTP               60s        2         Detect service-level issues quickly
-  Containers         60s        1         Process-level safety check
-  DNS                30--60s    2         Fast detection since clients rely on it
-  WAN                60s        4--5      Avoid ISP flap noise
-  WireGuard Remote   60s push   1         Based on handshake freshness
+- **Daily summaries** → `#daily-network-service-summary` (sent by host script, not Kuma)
+- **Real-time alerts** → `#network-service-alerts` (sent by Kuma notifications)
 
-------------------------------------------------------------------------
+In Kuma:
 
-# Slack Integration
+1. Settings → Notifications → Add → Slack
+2. Paste webhook URL for **alerts** channel
+3. Save and enable on monitors
 
-## Real-Time Alerts
+### Monitor inventory
 
-1.  Create Slack Incoming Webhook
-2.  Add notification in Uptime Kuma
-3.  Assign notification to monitors
+I use both *service-level* and *process-level* checks:
 
-## Daily Summary Script
+- **HTTP(s)**: Jellyfin, Audiobookshelf, UniFi, Pi-hole UI, Home Assistant (remote)
+- **Docker Container**: jellyfin, audiobookshelf, unifi, pihole, pihole2, wireguard, etc.
+- **DNS**: Pi-hole primary and secondary resolvers
+- **WAN**: ping to a stable anycast target (recommend `1.1.1.1`; optionally add `8.8.8.8` as a second WAN monitor)
+- **Push**: WireGuard remote probe heartbeat (from host script)
 
-Location:
+### Recommended intervals and retries
 
-/usr/local/bin/homelab-daily-summary
+| Category | Interval | Retries | Notes |
+|---|---:|---:|---|
+| HTTP | 60s | 2 | Fast, but not twitchy |
+| Containers | 60s | 1 | “Process alive” safety net |
+| DNS | 30–60s | 2 | High-value signal (clients depend on it) |
+| WAN | 60s | 4–5 | Avoid ISP flap noise |
+| WireGuard remote probe | 60s push | 1 | End-to-end tunnel validation (EC2 ↔ home) |
 
-Triggered by systemd timer.
+---
 
-------------------------------------------------------------------------
+## WireGuard remote probe (EC2)
 
-# WireGuard Remote Monitoring
+### Why an external probe
 
-## Why This Exists
+A local “container running” check doesn’t prove remote access works.
 
-Container health does NOT guarantee tunnel usability.
+The EC2 peer + handshake-age probe validates:
 
-We validate:
+- public IP reachability
+- router port-forward / firewall correctness
+- WireGuard negotiation + routing
+- tunnel stays usable even when no personal devices are connected
 
--   Public IP reachability
--   Port forwarding
--   Firewall correctness
--   Handshake freshness
--   Routing integrity
+### EC2 peer config notes
 
-## EC2 Remote Peer Setup
+On the EC2 instance:
 
-1.  Launch small EC2 instance (t4g.nano or similar)
-2.  Install WireGuard
-3.  Configure split tunnel (NO 0.0.0.0/0)
-4.  Add:
+- Use **split tunnel** (do **not** use `0.0.0.0/0` on EC2 or you’ll break SSH routing)
+- Add keepalive under the `[Peer]` block:
 
+```ini
 PersistentKeepalive = 25
-
-5.  Confirm handshake refresh every \~25 seconds.
-
-------------------------------------------------------------------------
-
-# WireGuard Health Probe Script
-
-Location:
-
-/usr/local/bin/wg-ec2-probe
-
-Purpose:
-
--   Check handshake age
--   If fresh → Push to Uptime Kuma
--   If stale → Do nothing (monitor goes DOWN)
-
-------------------------------------------------------------------------
-
-# systemd Integration
-
-## Service
-
-/etc/systemd/system/wg-ec2-probe.service
-
-## Timer
-
-/etc/systemd/system/wg-ec2-probe.timer
-
-Enable:
-
-``` bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now wg-ec2-probe.timer
 ```
 
-------------------------------------------------------------------------
+Verify on EC2:
 
-# Daily Slack Summary
+```bash
+sudo wg show wg0
+# Look for:
+# persistent keepalive: every 25 seconds
+# latest handshake: <recent>
+```
 
-Script location:
+Security group for the EC2 peer (minimal):
 
-/usr/local/bin/homelab-daily-summary
+- Inbound: SSH 22 from your IP (or none if using SSM/other management)
+- Outbound: default allow is fine (SGs are stateful; return UDP traffic is allowed)
+
+### Host-side probe script (push monitor)
+
+This script runs on the homelab host (`infra01`). It checks the **latest handshake age** for the EC2 peer **from inside the WireGuard container**, and only “pings” Kuma when healthy.
+
+**File:** `scripts/wg-ec2-probe` (install to `/usr/local/bin/wg-ec2-probe`)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- CONFIG ---
+# Base push URL from the Kuma Push monitor page (no extra params)
+PUSH_BASE="http://10.0.30.116:3001/api/push/REPLACE_WITH_TOKEN"
+EC2_PEER_KEY="REPLACE_WITH_EC2_PUBLIC_KEY"
+MAX_AGE_SECONDS=120
+WG_CONTAINER="wireguard"
+WG_IFACE="wg0"
+# --------------
+
+now="$(date +%s)"
+
+last="$(
+  docker exec "$WG_CONTAINER" wg show "$WG_IFACE" latest-handshakes \
+  | awk -v key="$EC2_PEER_KEY" '$1 == key { print $2 }'
+)"
+
+# No peer match or never handshaked => unhealthy (do NOT ping Kuma)
+if [[ -z "${last:-}" || "$last" == "0" ]]; then
+  exit 1
+fi
+
+age=$(( now - last ))
+
+# Stale => unhealthy (do NOT ping Kuma)
+if (( age > MAX_AGE_SECONDS )); then
+  exit 1
+fi
+
+# Healthy => push heartbeat
+curl -fsS "${PUSH_BASE}?status=up&msg=wg_ok_age_${age}s&ping=" >/dev/null
+```
+
+In Kuma:
+
+1. Add Monitor → **Push**
+2. Set heartbeat interval to **60s**
+3. Copy the push URL token into `PUSH_BASE`
+
+### systemd service + timer
+
+**File:** `systemd/wg-ec2-probe.service`
+
+```ini
+[Unit]
+Description=WireGuard EC2 probe -> Uptime Kuma push
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wg-ec2-probe
+```
+
+**File:** `systemd/wg-ec2-probe.timer`
+
+```ini
+[Unit]
+Description=Run WireGuard EC2 probe every minute
+
+[Timer]
+OnCalendar=*:*:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Install & enable:
+
+```bash
+sudo install -m 0755 scripts/wg-ec2-probe /usr/local/bin/wg-ec2-probe
+sudo install -m 0644 systemd/wg-ec2-probe.service /etc/systemd/system/wg-ec2-probe.service
+sudo install -m 0644 systemd/wg-ec2-probe.timer /etc/systemd/system/wg-ec2-probe.timer
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now wg-ec2-probe.timer
+systemctl list-timers --all | grep wg-ec2-probe
+```
+
+---
+
+## Daily Slack summary
+
+A daily “all systems healthy” post goes to `#daily-network-service-summary`. This is run on the host via systemd timer.
+
+### Daily summary script
+
+**File:** `scripts/homelab-daily-summary` (install to `/usr/local/bin/homelab-daily-summary`)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+source /etc/homelab/healthcheck.env
+
+json="$(curl -fsS "${KUMA_BASE_URL}/api/status-page/${KUMA_SLUG}")"
+
+up="$(echo "$json" | jq '[.publicGroupList[].monitorList[].heartbeat.status == 1] | length')"
+total="$(echo "$json" | jq '[.publicGroupList[].monitorList[]] | length')"
+down="$(( total - up ))"
+
+disk="$(df -h / | awk 'NR==2{print $5}')"
+host="$(hostname -s)"
+now="$(date '+%Y-%m-%d %H:%M')"
+
+if [[ "$down" -eq 0 ]]; then
+  read -r -d '' text <<EOF
+:white_check_mark: *${host}* — All systems healthy (${up}/${total})
+Disk usage: ${disk}
+${now}
+EOF
+else
+  read -r -d '' text <<EOF
+:rotating_light: *${host}* — ${down} services down (${up}/${total})
+Disk usage: ${disk}
+${now}
+EOF
+fi
+
+payload="$(jq -n --arg text "$text" '{text:$text}')"
+
+curl -fsS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" >/dev/null
+```
+
+**Env file:** `/etc/homelab/healthcheck.env` (mode 600)
+
+```bash
+KUMA_BASE_URL=http://127.0.0.1:3001
+KUMA_SLUG=homelab
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+```
 
 Permissions:
 
-``` bash
+```bash
 sudo chown root:root /usr/local/bin/homelab-daily-summary
 sudo chmod 755 /usr/local/bin/homelab-daily-summary
+sudo chmod 600 /etc/homelab/healthcheck.env
 ```
 
 Test:
 
-``` bash
+```bash
 sudo /usr/local/bin/homelab-daily-summary
 ```
 
-------------------------------------------------------------------------
+### systemd service + timer
 
-# Lambda Nightly Instance Shutdown
+**File:** `systemd/homelab-daily-summary.service`
 
-Lambda excludes monitoring node via tag:
+```ini
+[Unit]
+Description=Send daily homelab health summary to Slack
+After=network-online.target
+Wants=network-online.target
 
-AlwaysOn = true
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/homelab-daily-summary
+```
 
-Only instances without that tag are stopped.
+**File:** `systemd/homelab-daily-summary.timer`
 
-Runtime: Python 3.13
+```ini
+[Unit]
+Description=Run daily homelab health summary
 
-------------------------------------------------------------------------
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
 
-# Disaster Recovery Notes
+[Install]
+WantedBy=timers.target
+```
 
-If rebuilding:
+Install & enable:
 
-1.  Deploy Uptime Kuma container
-2.  Recreate monitors
-3.  Configure Slack notifications
-4.  Recreate EC2 remote peer
-5.  Restore scripts
-6.  Enable systemd timers
-7.  Validate push monitor heartbeat
-8.  Test Slack alert by stopping WireGuard container temporarily
+```bash
+sudo install -m 0755 scripts/homelab-daily-summary /usr/local/bin/homelab-daily-summary
+sudo install -m 0644 systemd/homelab-daily-summary.service /etc/systemd/system/homelab-daily-summary.service
+sudo install -m 0644 systemd/homelab-daily-summary.timer /etc/systemd/system/homelab-daily-summary.timer
 
-------------------------------------------------------------------------
+sudo systemctl daemon-reload
+sudo systemctl enable --now homelab-daily-summary.timer
+systemctl list-timers --all | grep homelab-daily-summary
+```
 
-# Repository Structure Recommendation
+---
 
-    homelab-monitoring-stack/
-    ├── README.md
-    ├── scripts/
-    │   ├── wg-ec2-probe
-    │   └── homelab-daily-summary
-    ├── systemd/
-    │   ├── wg-ec2-probe.service
-    │   └── wg-ec2-probe.timer
-    └── docs/
-        └── architecture.md
+## AWS nightly stop Lambda exclusion
 
-------------------------------------------------------------------------
+My nightly “stop instances” Lambda excludes the monitoring EC2 instance via tag:
 
-# Author
+- `AlwaysOn = true`
 
-Generated on 2026-02-12\
-Homelab monitoring documentation.
+Use Python **3.13** runtime.
+
+```python
+import boto3
+
+def _has_always_on_true(tags) -> bool:
+    if not tags:
+        return False
+    for t in tags:
+        if t.get("Key") == "AlwaysOn" and str(t.get("Value", "")).lower() == "true":
+            return True
+    return False
+
+def lambda_handler(event, context):
+    ec2_client = boto3.client("ec2")
+    regions = [r["RegionName"] for r in ec2_client.describe_regions()["Regions"]]
+
+    for region in regions:
+        ec2 = boto3.resource("ec2", region_name=region)
+        print(f"Region: {region}")
+
+        instances = ec2.instances.filter(
+            Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
+        )
+
+        for instance in instances:
+            if _has_always_on_true(getattr(instance, "tags", None)):
+                print(f"Skipping AlwaysOn instance: {instance.id}")
+                continue
+
+            instance.stop()
+            print(f"Stopped instance: {instance.id}")
+```
+
+---
+
+## Repo layout
+
+```text
+homelab-monitoring-stack/
+├── README.md
+├── scripts/
+│   ├── wg-ec2-probe
+│   └── homelab-daily-summary
+├── systemd/
+│   ├── wg-ec2-probe.service
+│   ├── wg-ec2-probe.timer
+│   ├── homelab-daily-summary.service
+│   └── homelab-daily-summary.timer
+└── aws/
+    └── stop_ec2_instances_lambda.py
+```
+
+---
+
+## Recovery checklist
+
+If rebuilding from scratch:
+
+1. Deploy Uptime Kuma container
+2. Create monitors + status page (`KUMA_SLUG`)
+3. Configure Slack alert webhook in Kuma
+4. Create Push monitor for WireGuard remote probe; copy token
+5. Stand up EC2 peer, confirm keepalive and handshakes
+6. Install scripts to `/usr/local/bin/`
+7. Install systemd unit + timer files
+8. Enable timers and verify heartbeats in Kuma
+9. Run a test failure (stop `wireguard` container) and confirm Slack alert + recovery
+
+---
+
+*Generated on 2026-02-12.*
