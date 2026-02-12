@@ -1,0 +1,9 @@
+[Unit]
+Description=Run daily homelab health summary
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Send daily homelab health summary to Slack
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/homelab-daily-summary

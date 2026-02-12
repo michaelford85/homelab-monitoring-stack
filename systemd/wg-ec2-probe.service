@@ -1,0 +1,8 @@
+[Unit]
+Description=WireGuard EC2 probe -> Uptime Kuma push
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wg-ec2-probe

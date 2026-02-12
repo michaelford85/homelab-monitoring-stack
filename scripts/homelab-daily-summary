@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source /etc/homelab/healthcheck.env
+
+json="$(curl -fsS "${KUMA_BASE_URL}/api/status-page/${KUMA_SLUG}")"
+
+up="$(echo "$json" | jq '[.publicGroupList[].monitorList[].heartbeat.status == 1] | length')"
+total="$(echo "$json" | jq '[.publicGroupList[].monitorList[]] | length')"
+down="$(( total - up ))"
+
+disk="$(df -h / | awk 'NR==2{print $5}')"
+host="$(hostname -s)"
+now="$(date '+%Y-%m-%d %H:%M')"
+
+if [[ "$down" -eq 0 ]]; then
+  read -r -d '' text <<EOF
+:white_check_mark: *${host}* — All systems healthy (${up}/${total})
+Disk usage: ${disk}
+${now}
+EOF
+else
+  read -r -d '' text <<EOF
+:rotating_light: *${host}* — ${down} services down (${up}/${total})
+Disk usage: ${disk}
+${now}
+EOF
+fi
+
+payload="$(jq -n --arg text "$text" '{text:$text}')"
+
+curl -fsS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" >/dev/null

@@ -15,6 +15,7 @@ This repo is my “do it again” playbook: install Uptime Kuma, configure monit
 
 ## Table of contents
 
+- [Repo layout](#repo-layout)
 - [Architecture](#architecture)
 - [Uptime Kuma](#uptime-kuma)
   - [Install](#install)
@@ -30,10 +31,27 @@ This repo is my “do it again” playbook: install Uptime Kuma, configure monit
   - [Daily summary script](#daily-summary-script)
   - [systemd service + timer](#systemd-service--timer-1)
 - [AWS nightly stop Lambda exclusion](#aws-nightly-stop-lambda-exclusion)
-- [Repo layout](#repo-layout)
 - [Recovery checklist](#recovery-checklist)
 
 ---
+---
+
+## Repo layout
+
+```text
+homelab-monitoring-stack/
+├── README.md
+├── scripts/
+│   ├── wg-ec2-probe
+│   └── homelab-daily-summary
+├── systemd/
+│   ├── wg-ec2-probe.service
+│   ├── wg-ec2-probe.timer
+│   ├── homelab-daily-summary.service
+│   └── homelab-daily-summary.timer
+└── aws/
+    └── stop_ec2_instances_lambda.py
+```
 
 ## Architecture
 
@@ -71,15 +89,21 @@ flowchart LR
 
 ## Uptime Kuma
 
-### Install
+docker-compose.yml:
 
-```bash
-docker run -d \
-  --name uptime-kuma \
-  --restart=always \
-  -p 3001:3001 \
-  -v uptime-kuma:/app/data \
-  louislam/uptime-kuma:latest
+``` bash
+version: "3"
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
 ```
 
 Open:
@@ -103,7 +127,7 @@ In Kuma:
 
 I use both *service-level* and *process-level* checks:
 
-- **HTTP(s)**: Jellyfin, Audiobookshelf, UniFi, Pi-hole UI, Home Assistant (remote)
+- **HTTP(s)**: Jellyfin, Audiobookshelf, UniFi, Pi-hole UI, Home Assistant
 - **Docker Container**: jellyfin, audiobookshelf, unifi, pihole, pihole2, wireguard, etc.
 - **DNS**: Pi-hole primary and secondary resolvers
 - **WAN**: ping to a stable anycast target (recommend `1.1.1.1`; optionally add `8.8.8.8` as a second WAN monitor)
@@ -156,50 +180,14 @@ sudo wg show wg0
 
 Security group for the EC2 peer (minimal):
 
-- Inbound: SSH 22 from your IP (or none if using SSM/other management)
+- Inbound: SSH 22 from **only** your IP (or none if using SSM/other management)
 - Outbound: default allow is fine (SGs are stateful; return UDP traffic is allowed)
 
 ### Host-side probe script (push monitor)
 
 This script runs on the homelab host (`infra01`). It checks the **latest handshake age** for the EC2 peer **from inside the WireGuard container**, and only “pings” Kuma when healthy.
 
-**File:** `scripts/wg-ec2-probe` (install to `/usr/local/bin/wg-ec2-probe`)
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# --- CONFIG ---
-# Base push URL from the Kuma Push monitor page (no extra params)
-PUSH_BASE="http://10.0.30.116:3001/api/push/REPLACE_WITH_TOKEN"
-EC2_PEER_KEY="REPLACE_WITH_EC2_PUBLIC_KEY"
-MAX_AGE_SECONDS=120
-WG_CONTAINER="wireguard"
-WG_IFACE="wg0"
-# --------------
-
-now="$(date +%s)"
-
-last="$(
-  docker exec "$WG_CONTAINER" wg show "$WG_IFACE" latest-handshakes \
-  | awk -v key="$EC2_PEER_KEY" '$1 == key { print $2 }'
-)"
-
-# No peer match or never handshaked => unhealthy (do NOT ping Kuma)
-if [[ -z "${last:-}" || "$last" == "0" ]]; then
-  exit 1
-fi
-
-age=$(( now - last ))
-
-# Stale => unhealthy (do NOT ping Kuma)
-if (( age > MAX_AGE_SECONDS )); then
-  exit 1
-fi
-
-# Healthy => push heartbeat
-curl -fsS "${PUSH_BASE}?status=up&msg=wg_ok_age_${age}s&ping=" >/dev/null
-```
+**File:** `[scripts/wg-ec2-probe](./scripts/wg-ec2-probe)` (install to `/usr/local/bin/wg-ec2-probe`)
 
 In Kuma:
 
@@ -209,32 +197,9 @@ In Kuma:
 
 ### systemd service + timer
 
-**File:** `systemd/wg-ec2-probe.service`
+**File:** `[systemd/wg-ec2-probe.service](./systemd/wg-ec2-probe.service)`
 
-```ini
-[Unit]
-Description=WireGuard EC2 probe -> Uptime Kuma push
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/wg-ec2-probe
-```
-
-**File:** `systemd/wg-ec2-probe.timer`
-
-```ini
-[Unit]
-Description=Run WireGuard EC2 probe every minute
-
-[Timer]
-OnCalendar=*:*:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
+**File:** `[systemd/wg-ec2-probe.timer](./systemd/wg-ec2-probe.timer)`
 
 Install & enable:
 
@@ -256,42 +221,7 @@ A daily “all systems healthy” post goes to `#daily-network-service-summary`.
 
 ### Daily summary script
 
-**File:** `scripts/homelab-daily-summary` (install to `/usr/local/bin/homelab-daily-summary`)
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-source /etc/homelab/healthcheck.env
-
-json="$(curl -fsS "${KUMA_BASE_URL}/api/status-page/${KUMA_SLUG}")"
-
-up="$(echo "$json" | jq '[.publicGroupList[].monitorList[].heartbeat.status == 1] | length')"
-total="$(echo "$json" | jq '[.publicGroupList[].monitorList[]] | length')"
-down="$(( total - up ))"
-
-disk="$(df -h / | awk 'NR==2{print $5}')"
-host="$(hostname -s)"
-now="$(date '+%Y-%m-%d %H:%M')"
-
-if [[ "$down" -eq 0 ]]; then
-  read -r -d '' text <<EOF
-:white_check_mark: *${host}* — All systems healthy (${up}/${total})
-Disk usage: ${disk}
-${now}
-EOF
-else
-  read -r -d '' text <<EOF
-:rotating_light: *${host}* — ${down} services down (${up}/${total})
-Disk usage: ${disk}
-${now}
-EOF
-fi
-
-payload="$(jq -n --arg text "$text" '{text:$text}')"
-
-curl -fsS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" >/dev/null
-```
+**File:** `[scripts/homelab-daily-summary](./scripts/homelab-daily-summary)` (install to `/usr/local/bin/homelab-daily-summary`)
 
 **Env file:** `/etc/homelab/healthcheck.env` (mode 600)
 
@@ -317,32 +247,9 @@ sudo /usr/local/bin/homelab-daily-summary
 
 ### systemd service + timer
 
-**File:** `systemd/homelab-daily-summary.service`
+**File:** `[systemd/homelab-daily-summary.service](./systemd/homelab-daily-summary.service)`
 
-```ini
-[Unit]
-Description=Send daily homelab health summary to Slack
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/homelab-daily-summary
-```
-
-**File:** `systemd/homelab-daily-summary.timer`
-
-```ini
-[Unit]
-Description=Run daily homelab health summary
-
-[Timer]
-OnCalendar=*-*-* 08:00:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
+**File:** `[systemd/homelab-daily-summary.timer](./systemd/homelab-daily-summary.timer)`
 
 Install & enable:
 
@@ -364,58 +271,9 @@ My nightly “stop instances” Lambda excludes the monitoring EC2 instance via 
 
 - `AlwaysOn = true`
 
-Use Python **3.13** runtime.
+Use Python **3.13** runtime or greater.
 
-```python
-import boto3
-
-def _has_always_on_true(tags) -> bool:
-    if not tags:
-        return False
-    for t in tags:
-        if t.get("Key") == "AlwaysOn" and str(t.get("Value", "")).lower() == "true":
-            return True
-    return False
-
-def lambda_handler(event, context):
-    ec2_client = boto3.client("ec2")
-    regions = [r["RegionName"] for r in ec2_client.describe_regions()["Regions"]]
-
-    for region in regions:
-        ec2 = boto3.resource("ec2", region_name=region)
-        print(f"Region: {region}")
-
-        instances = ec2.instances.filter(
-            Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
-        )
-
-        for instance in instances:
-            if _has_always_on_true(getattr(instance, "tags", None)):
-                print(f"Skipping AlwaysOn instance: {instance.id}")
-                continue
-
-            instance.stop()
-            print(f"Stopped instance: {instance.id}")
-```
-
----
-
-## Repo layout
-
-```text
-homelab-monitoring-stack/
-├── README.md
-├── scripts/
-│   ├── wg-ec2-probe
-│   └── homelab-daily-summary
-├── systemd/
-│   ├── wg-ec2-probe.service
-│   ├── wg-ec2-probe.timer
-│   ├── homelab-daily-summary.service
-│   └── homelab-daily-summary.timer
-└── aws/
-    └── stop_ec2_instances_lambda.py
-```
+**File:**: `[aws/stop_ec2_instances_lambda.py](./aws/stop_ec2_instances_lambda.py)`
 
 ---
 

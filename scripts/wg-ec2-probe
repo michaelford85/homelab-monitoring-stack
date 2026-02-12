@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- CONFIG ---
+# Base push URL from the Kuma Push monitor page (no extra params)
+PUSH_BASE="http://10.0.30.116:3001/api/push/REPLACE_WITH_TOKEN"
+EC2_PEER_KEY="REPLACE_WITH_EC2_PUBLIC_KEY"
+MAX_AGE_SECONDS=120
+WG_CONTAINER="wireguard"
+WG_IFACE="wg0"
+# --------------
+
+now="$(date +%s)"
+
+last="$(
+  docker exec "$WG_CONTAINER" wg show "$WG_IFACE" latest-handshakes \
+  | awk -v key="$EC2_PEER_KEY" '$1 == key { print $2 }'
+)"
+
+# No peer match or never handshaked => unhealthy (do NOT ping Kuma)
+if [[ -z "${last:-}" || "$last" == "0" ]]; then
+  exit 1
+fi
+
+age=$(( now - last ))
+
+# Stale => unhealthy (do NOT ping Kuma)
+if (( age > MAX_AGE_SECONDS )); then
+  exit 1
+fi
+
+# Healthy => push heartbeat
+curl -fsS "${PUSH_BASE}?status=up&msg=wg_ok_age_${age}s&ping=" >/dev/null
