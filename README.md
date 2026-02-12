@@ -197,9 +197,9 @@ In Kuma:
 
 ### systemd service + timer
 
-**File:** `[systemd/wg-ec2-probe.service](./systemd/wg-ec2-probe.service)`
+**File:** [systemd/wg-ec2-probe.service](./systemd/wg-ec2-probe.service)
 
-**File:** `[systemd/wg-ec2-probe.timer](./systemd/wg-ec2-probe.timer)`
+**File:** [systemd/wg-ec2-probe.timer](./systemd/wg-ec2-probe.timer)
 
 Install & enable:
 
@@ -221,7 +221,7 @@ A daily “all systems healthy” post goes to `#daily-network-service-summary`.
 
 ### Daily summary script
 
-**File:** `[scripts/homelab-daily-summary](./scripts/homelab-daily-summary)` (install to `/usr/local/bin/homelab-daily-summary`)
+**File:** [scripts/homelab-daily-summary](./scripts/homelab-daily-summary) (install to `/usr/local/bin/homelab-daily-summary`)
 
 **Env file:** `/etc/homelab/healthcheck.env` (mode 600)
 
@@ -247,9 +247,9 @@ sudo /usr/local/bin/homelab-daily-summary
 
 ### systemd service + timer
 
-**File:** `[systemd/homelab-daily-summary.service](./systemd/homelab-daily-summary.service)`
+**File:** [systemd/homelab-daily-summary.service](./systemd/homelab-daily-summary.service)
 
-**File:** `[systemd/homelab-daily-summary.timer](./systemd/homelab-daily-summary.timer)`
+**File:** [systemd/homelab-daily-summary.timer](./systemd/homelab-daily-summary.timer)
 
 Install & enable:
 
@@ -273,7 +273,7 @@ My nightly “stop instances” Lambda excludes the monitoring EC2 instance via 
 
 Use Python **3.13** runtime or greater.
 
-**File:**: `[aws/stop_ec2_instances_lambda.py](./aws/stop_ec2_instances_lambda.py)`
+**File:**: [aws/stop_ec2_instances_lambda.py](./aws/stop_ec2_instances_lambda.py)
 
 ---
 
