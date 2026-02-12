@@ -11,6 +11,10 @@
 
 This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add an external WireGuard probe (EC2), and wire up host scripts + systemd timers.
 
+<p align="center">
+  <img src="images/uptime_kuma_dashboard.png" alt="Homelab Monitoring Dashboard" width="800">
+</p>
+
 ---
 
 ## Table of contents
