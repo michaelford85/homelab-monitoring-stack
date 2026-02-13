@@ -137,12 +137,16 @@ Create two Slack incoming webhooks:
 <p align="center">
   <img src="images/daily_summary.png" alt="Homelab Daily Summaries" width="500">
 </p>
-- **Daily summaries** → `#daily-network-service-summary` (sent by host script, not Kuma)
+
+**Daily summaries** → `#daily-network-service-summary`  
+(sent by host script, not Kuma)
 
 <p align="center">
   <img src="images/alerts.png" alt="Homelab Alerts" width="500">
 </p>
-- **Real-time alerts** → `#network-service-alerts` (sent by Kuma notifications)
+
+**Real-time alerts** → `#network-service-alerts`  
+(sent by Kuma notifications)
 
 In Kuma:
 
