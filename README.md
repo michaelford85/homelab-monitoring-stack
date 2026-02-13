@@ -6,13 +6,14 @@
 ![VPN](https://img.shields.io/badge/vpn-wireguard-9cf)
 ![OS](https://img.shields.io/badge/os-Ubuntu%2022.04-orange)
 ![Automation](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
+![Home Assistant](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
 
 > Infrastructure monitoring, alerting, and remote tunnel validation for a Docker-based homelab using Uptime Kuma, WireGuard, systemd timers, Slack, and AWS.
 
 This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add an external WireGuard probe (EC2), and wire up host scripts + systemd timers.
 
 <p align="center">
-  <img src="images/uptime_kuma_dashboard.png" alt="Homelab Monitoring Dashboard" width="800">
+  <img src="images/home_assistant_health.png" alt="Homelab Infrastructure Health" width="500">
 </p>
 
 ---
@@ -93,6 +94,21 @@ flowchart LR
 
 ## Uptime Kuma
 
+<p align="center">
+  <img src="images/uptime_kuma_dashboard.png" alt="Uptime Kuma Dashboard" width="500">
+</p>
+
+Uptime Kuma is a clean, self-hosted monitoring tool that keeps an eye on all of your services. It can monitor:
+
+- HTTP(S) availability  
+- TCP services  
+- DNS resolvers  
+- Container health  
+
+It also [integrates with Home Assistant](https://www.home-assistant.io/integrations/uptime_kuma/), allowing you to add monitor statuses directly to your dashboard (shown in the image at the top of this repository).
+
+### Installation with docker-compose
+
 docker-compose.yml:
 
 ``` bash
@@ -118,7 +134,14 @@ Open:
 
 Create two Slack incoming webhooks:
 
+<p align="center">
+  <img src="images/daily_summary.png" alt="Homelab Daily Summaries" width="500">
+</p>
 - **Daily summaries** → `#daily-network-service-summary` (sent by host script, not Kuma)
+
+<p align="center">
+  <img src="images/alerts.png" alt="Homelab Alerts" width="500">
+</p>
 - **Real-time alerts** → `#network-service-alerts` (sent by Kuma notifications)
 
 In Kuma:
