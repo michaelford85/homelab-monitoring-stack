@@ -6,14 +6,14 @@
 ![VPN](https://img.shields.io/badge/vpn-wireguard-9cf)
 ![OS](https://img.shields.io/badge/os-Ubuntu%2022.04-orange)
 ![Automation](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
-![Home Assistant](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-41BDF5?logo=home-assistant&logoColor=white)
 
 > Infrastructure monitoring, alerting, and remote tunnel validation for a Docker-based homelab using Uptime Kuma, WireGuard, systemd timers, Slack, and AWS.
 
 This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add an external WireGuard probe (EC2), and wire up host scripts + systemd timers.
 
 <p align="center">
-  <img src="images/home_assistant_health.png" alt="Homelab Infrastructure Health" width="500">
+  <img src="images/home_assistant_health.png" alt="Homelab Infrastructure Health" width="800">
 </p>
 
 ---
