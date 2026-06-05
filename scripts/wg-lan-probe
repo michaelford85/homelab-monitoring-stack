@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- CONFIG ---
+# Base push URL from the Kuma Push monitor page (no extra params)
+PUSH_BASE="http://10.0.30.116:3001/api/push/REPLACE_WITH_TOKEN"
+WG_IFACE="wg0"
+PING_TARGET="1.1.1.1"
+PING_COUNT=3
+PING_TIMEOUT=2
+# --------------
+
+# Ping the public anycast target through the local WireGuard interface.
+# Success proves: wg interface is up, tunnel routing works, and outbound
+# internet through the tunnel is reachable.
+if ! ping -c "$PING_COUNT" -W "$PING_TIMEOUT" -I "$WG_IFACE" "$PING_TARGET" >/dev/null 2>&1; then
+  # Unhealthy => do NOT push (Kuma flags the missing heartbeat as down)
+  exit 1
+fi
+
+# Healthy => push heartbeat
+curl -fsS "${PUSH_BASE}?status=up&msg=wg_lan_ok&ping=" >/dev/null

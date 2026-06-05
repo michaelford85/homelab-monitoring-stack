@@ -8,9 +8,9 @@
 ![Automation](https://img.shields.io/badge/automation-systemd%20%2B%20scripts-lightgrey)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-41BDF5?logo=home-assistant&logoColor=white)
 
-> Infrastructure monitoring, alerting, and remote tunnel validation for a Docker-based homelab using Uptime Kuma, WireGuard, systemd timers, Slack, and AWS.
+> Infrastructure monitoring, alerting, and remote tunnel validation for a Docker-based homelab using Uptime Kuma, WireGuard, systemd timers, and Slack.
 
-This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add an external WireGuard probe (EC2), and wire up host scripts + systemd timers.
+This repo is my “do it again” playbook: install Uptime Kuma, configure monitors + Slack, add a LAN WireGuard probe (NUC peer), and wire up host scripts + systemd timers.
 
 <p align="center">
   <img src="images/home_assistant_health.png" alt="Homelab Infrastructure Health" width="800">
@@ -27,9 +27,8 @@ This repo is my “do it again” playbook: install Uptime Kuma, configure monit
   - [Slack notifications](#slack-notifications)
   - [Monitor inventory](#monitor-inventory)
   - [Recommended intervals and retries](#recommended-intervals-and-retries)
-- [WireGuard remote probe (EC2)](#wireguard-remote-probe-ec2)
-  - [Why an external probe](#why-an-external-probe)
-  - [EC2 peer config notes](#ec2-peer-config-notes)
+- [WireGuard LAN probe](#wireguard-lan-probe)
+  - [Why a dedicated LAN probe](#why-a-dedicated-lan-probe)
   - [Host-side probe script (push monitor)](#host-side-probe-script-push-monitor)
   - [systemd service + timer](#systemd-service--timer)
 - [Daily Slack summary](#daily-slack-summary)
@@ -47,15 +46,13 @@ This repo is my “do it again” playbook: install Uptime Kuma, configure monit
 homelab-monitoring-stack/
 ├── README.md
 ├── scripts/
-│   ├── wg-ec2-probe
+│   ├── wg-lan-probe
 │   └── homelab-daily-summary
-├── systemd/
-│   ├── wg-ec2-probe.service
-│   ├── wg-ec2-probe.timer
-│   ├── homelab-daily-summary.service
-│   └── homelab-daily-summary.timer
-└── aws/
-    └── stop_ec2_instances_lambda.py
+└── systemd/
+    ├── wg-lan-probe.service
+    ├── wg-lan-probe.timer
+    ├── homelab-daily-summary.service
+    └── homelab-daily-summary.timer
 ```
 
 ## Architecture
@@ -67,6 +64,7 @@ flowchart LR
     WG[WireGuard<br/>Docker container]
     SVC[Services<br/>Jellyfin / Audiobookshelf / UniFi / Pi-hole]
     SYS[Host scripts<br/>systemd timers]
+    NUC[LAN Probe NUC<br/>WireGuard peer]
   end
 
   subgraph Slack["Slack Workspace"]
@@ -74,20 +72,12 @@ flowchart LR
     CH2["#network-service-alerts"]
   end
 
-  subgraph AWS["AWS"]
-    EC2[EC2 WireGuard Peer<br/>Always-on probe]
-    LAMBDA[Nightly Stop Lambda<br/>excludes AlwaysOn=true]
-  end
-
   KU -- "HTTP/DNS/Container/WAN monitors" --> SVC
   KU -- "real-time alerts" --> CH2
   SYS -- "daily summary webhook" --> CH1
 
-  EC2 -- "WireGuard tunnel (PersistentKeepalive=25)" --> WG
-  SYS -- "checks handshake age in WG container" --> WG
-  SYS -- "push heartbeat to Kuma (Push monitor)" --> KU
-
-  LAMBDA -. "stops instances except AlwaysOn=true" .-> EC2
+  NUC -- "ping 1.1.1.1 via wg0" --> WG
+  NUC -- "push heartbeat to Kuma (Push monitor)" --> KU
 ```
 
 ---
@@ -172,53 +162,29 @@ I use both *service-level* and *process-level* checks:
 | Containers | 60s | 1 | “Process alive” safety net |
 | DNS | 30–60s | 2 | High-value signal (clients depend on it) |
 | WAN | 60s | 4–5 | Avoid ISP flap noise |
-| WireGuard remote probe | 60s push | 1 | End-to-end tunnel validation (EC2 ↔ home) |
+| WireGuard remote probe | 60s push | 1 | WireGuard tunnel + outbound internet validation (LAN NUC via wg0) |
 
 ---
 
-## WireGuard remote probe (EC2)
+## WireGuard LAN probe
 
-### Why an external probe
+### Why a dedicated LAN probe
 
-A local “container running” check doesn’t prove remote access works.
+A local “container running” check doesn’t prove the tunnel is actually carrying traffic.
 
-The EC2 peer + handshake-age probe validates:
+A NUC peer on the LAN running a ping through `wg0` validates:
 
-- public IP reachability
-- router port-forward / firewall correctness
-- WireGuard negotiation + routing
-- tunnel stays usable even when no personal devices are connected
+- WireGuard container health
+- tunnel routing
+- outbound internet connectivity through the tunnel
 
-### EC2 peer config notes
-
-On the EC2 instance:
-
-- Use **split tunnel** (do **not** use `0.0.0.0/0` on EC2 or you’ll break SSH routing)
-- Add keepalive under the `[Peer]` block:
-
-```ini
-PersistentKeepalive = 25
-```
-
-Verify on EC2:
-
-```bash
-sudo wg show wg0
-# Look for:
-# persistent keepalive: every 25 seconds
-# latest handshake: <recent>
-```
-
-Security group for the EC2 peer (minimal):
-
-- Inbound: SSH 22 from **only** your IP (or none if using SSM/other management)
-- Outbound: default allow is fine (SGs are stateful; return UDP traffic is allowed)
+…without requiring any cloud infrastructure.
 
 ### Host-side probe script (push monitor)
 
-This script runs on the homelab host (`infra01`). It checks the **latest handshake age** for the EC2 peer **from inside the WireGuard container**, and only “pings” Kuma when healthy.
+This script runs on a dedicated LAN NUC that is configured as a WireGuard peer. It pings `1.1.1.1` through `wg0`, and only “pings” Kuma when the ping succeeds.
 
-**File:** [scripts/wg-ec2-probe](./scripts/wg-ec2-probe) (install to `/usr/local/bin/wg-ec2-probe`)
+**File:** [scripts/wg-lan-probe](./scripts/wg-lan-probe) (install to `/usr/local/bin/wg-lan-probe`)
 
 In Kuma:
 
@@ -228,20 +194,20 @@ In Kuma:
 
 ### systemd service + timer
 
-**File:** [systemd/wg-ec2-probe.service](./systemd/wg-ec2-probe.service)
+**File:** [systemd/wg-lan-probe.service](./systemd/wg-lan-probe.service)
 
-**File:** [systemd/wg-ec2-probe.timer](./systemd/wg-ec2-probe.timer)
+**File:** [systemd/wg-lan-probe.timer](./systemd/wg-lan-probe.timer)
 
 Install & enable:
 
 ```bash
-sudo install -m 0755 scripts/wg-ec2-probe /usr/local/bin/wg-ec2-probe
-sudo install -m 0644 systemd/wg-ec2-probe.service /etc/systemd/system/wg-ec2-probe.service
-sudo install -m 0644 systemd/wg-ec2-probe.timer /etc/systemd/system/wg-ec2-probe.timer
+sudo install -m 0755 scripts/wg-lan-probe /usr/local/bin/wg-lan-probe
+sudo install -m 0644 systemd/wg-lan-probe.service /etc/systemd/system/wg-lan-probe.service
+sudo install -m 0644 systemd/wg-lan-probe.timer /etc/systemd/system/wg-lan-probe.timer
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now wg-ec2-probe.timer
-systemctl list-timers --all | grep wg-ec2-probe
+sudo systemctl enable --now wg-lan-probe.timer
+systemctl list-timers --all | grep wg-lan-probe
 ```
 
 ---
@@ -306,6 +272,8 @@ Use Python **3.13** runtime or greater.
 
 **File:**: [aws/stop_ec2_instances_lambda.py](./aws/stop_ec2_instances_lambda.py)
 
+> Note: The EC2 probe peer has been decommissioned in favour of the LAN NUC probe. The Lambda is retained here for any future EC2 usage.
+
 ---
 
 ## Recovery checklist
@@ -315,10 +283,10 @@ If rebuilding from scratch:
 1. Deploy Uptime Kuma container
 2. Create monitors + status page (`KUMA_SLUG`)
 3. Configure Slack alert webhook in Kuma
-4. Create Push monitor for WireGuard remote probe; copy token
-5. Stand up EC2 peer, confirm keepalive and handshakes
-6. Install scripts to `/usr/local/bin/`
-7. Install systemd unit + timer files
+4. Install WireGuard on the LAN probe NUC, add as a peer, confirm handshake
+5. Create Push monitor for WireGuard LAN probe; copy token
+6. Install `wg-lan-probe` script and systemd units on the NUC
+7. Install `homelab-daily-summary` script and systemd units on the host
 8. Enable timers and verify heartbeats in Kuma
 9. Run a test failure (stop `wireguard` container) and confirm Slack alert + recovery
 
