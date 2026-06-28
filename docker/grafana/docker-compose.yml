@@ -9,9 +9,10 @@ services:
     network_mode: host
     environment:
       TZ: "America/Chicago"
-      # Change this on first login (or set GF_SECURITY_ADMIN_PASSWORD here).
-      GF_SECURITY_ADMIN_USER: "admin"
-      GF_SECURITY_ADMIN_PASSWORD: "admin"
+      # Admin password is managed in-app (stored in 1Password), not here.
+      # On a *fresh* volume Grafana defaults to admin/admin and forces a change
+      # at first login. To bootstrap non-interactively instead, create a
+      # gitignored .env with GF_SECURITY_ADMIN_PASSWORD and reference it here.
     volumes:
       - grafana_data:/var/lib/grafana
       - ./provisioning:/etc/grafana/provisioning:ro
