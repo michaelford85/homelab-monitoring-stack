@@ -297,6 +297,9 @@ Use Python **3.13** runtime or greater.
 ---
 
 ## Prometheus + Grafana metrics stack
+<p align="center">
+  <img src="images/grafana_dashboard.png" alt="SteamOS PC Hardware Health" width="800">
+</p>
 
 Where Uptime Kuma answers *"is it up?"*, Prometheus + Grafana answer *"how is it
 doing?"* — time-series hardware and service metrics (CPU, RAM, disk, network,
