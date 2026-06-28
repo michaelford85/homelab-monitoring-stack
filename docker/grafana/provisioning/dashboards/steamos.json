@@ -1097,12 +1097,571 @@
       "type": "stat"
     },
     {
+      "id": 2100,
+      "type": "row",
+      "title": "GPU Quick \u2014 Pressure (discrete amdgpu)",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 5
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "description": "Real RAM usage excluding cache and reclaimable memory",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 70
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 6
+      },
+      "id": 2101,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": false
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": false,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_busy_percent{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Busy",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "description": "Real RAM usage excluding cache and reclaimable memory",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 75
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 6
+      },
+      "id": 2102,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": false
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": false,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_vram_used_bytes{job=\"$job\",instance=\"$node\"} / amdgpu_vram_total_bytes{job=\"$job\",instance=\"$node\"} * 100",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU VRAM Used",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "description": "Real RAM usage excluding cache and reclaimable memory",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 65
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 6
+      },
+      "id": 2103,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": false
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": false,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_temp_celsius{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Temp",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 120
+              },
+              {
+                "color": "red",
+                "value": 180
+              }
+            ]
+          },
+          "unit": "watt",
+          "decimals": 1
+        }
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 9,
+        "y": 6
+      },
+      "id": 2104,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_power_watt{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Power",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 9,
+        "y": 8
+      },
+      "id": 2105,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_sclk_mhz{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Clock (MHz)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 12,
+        "y": 6
+      },
+      "id": 2106,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_vram_used_bytes{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "VRAM Used",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_prometheus}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 3,
+        "x": 12,
+        "y": 8
+      },
+      "id": 2107,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "expr": "amdgpu_vram_total_bytes{job=\"$job\",instance=\"$node\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "VRAM Total",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
       },
       "id": 343,
       "title": "Basic CPU / Mem / Net / Disk",
@@ -1247,7 +1806,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 11
       },
       "id": 77,
       "options": {
@@ -1491,7 +2050,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 11
       },
       "id": 78,
       "options": {
@@ -1660,7 +2219,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 18
       },
       "id": 74,
       "options": {
@@ -1777,7 +2336,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 18
       },
       "id": 152,
       "options": {
@@ -1824,7 +2383,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 25
       },
       "id": 344,
       "panels": [
@@ -2040,7 +2599,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 26
           },
           "id": 3,
           "options": {
@@ -2413,7 +2972,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 26
           },
           "id": 24,
           "options": {
@@ -2631,7 +3190,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 433
+            "y": 438
           },
           "id": 84,
           "options": {
@@ -2757,7 +3316,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 433
+            "y": 438
           },
           "id": 338,
           "options": {
@@ -2883,7 +3442,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 445
+            "y": 450
           },
           "id": 229,
           "options": {
@@ -3007,7 +3566,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 445
+            "y": 450
           },
           "id": 42,
           "options": {
@@ -3120,7 +3679,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 457
+            "y": 462
           },
           "id": 43,
           "options": {
@@ -3249,7 +3808,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 457
+            "y": 462
           },
           "id": 156,
           "options": {
@@ -3349,7 +3908,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 469
+            "y": 474
           },
           "id": 127,
           "options": {
@@ -3475,7 +4034,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 469
+            "y": 474
           },
           "id": 322,
           "options": {
@@ -3589,7 +4148,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 26
       },
       "id": 345,
       "panels": [
@@ -3675,7 +4234,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 27
           },
           "id": 135,
           "options": {
@@ -3789,7 +4348,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 27
           },
           "id": 130,
           "options": {
@@ -3928,7 +4487,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 222
+            "y": 227
           },
           "id": 131,
           "options": {
@@ -4041,7 +4600,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 222
+            "y": 227
           },
           "id": 138,
           "options": {
@@ -4215,7 +4774,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 232
+            "y": 237
           },
           "id": 136,
           "options": {
@@ -4329,7 +4888,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 232
+            "y": 237
           },
           "id": 191,
           "options": {
@@ -4469,7 +5028,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 242
+            "y": 247
           },
           "id": 160,
           "options": {
@@ -4629,7 +5188,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 242
+            "y": 247
           },
           "id": 70,
           "options": {
@@ -4755,7 +5314,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 252
+            "y": 257
           },
           "id": 129,
           "options": {
@@ -4868,7 +5427,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 252
+            "y": 257
           },
           "id": 137,
           "options": {
@@ -4986,7 +5545,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 262
+            "y": 267
           },
           "id": 128,
           "options": {
@@ -5114,7 +5673,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 262
+            "y": 267
           },
           "id": 140,
           "options": {
@@ -5202,7 +5761,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 27
       },
       "id": 346,
       "panels": [
@@ -5280,7 +5839,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 28
           },
           "id": 176,
           "options": {
@@ -5406,7 +5965,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 28
           },
           "id": 22,
           "options": {
@@ -5557,7 +6116,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 203
+            "y": 208
           },
           "id": 175,
           "options": {
@@ -5701,7 +6260,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 203
+            "y": 208
           },
           "id": 307,
           "options": {
@@ -5751,7 +6310,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 28
       },
       "id": 347,
       "panels": [
@@ -5815,7 +6374,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 29
           },
           "id": 260,
           "options": {
@@ -5943,7 +6502,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 29
           },
           "id": 291,
           "options": {
@@ -6043,7 +6602,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 174
+            "y": 179
           },
           "id": 168,
           "options": {
@@ -6187,7 +6746,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 174
+            "y": 179
           },
           "id": 333,
           "options": {
@@ -6301,7 +6860,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 184
+            "y": 189
           },
           "id": 334,
           "options": {
@@ -6419,7 +6978,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 184
+            "y": 189
           },
           "id": 335,
           "options": {
@@ -6511,7 +7070,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 29
       },
       "id": 348,
       "panels": [
@@ -6580,7 +7139,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 25
+            "y": 30
           },
           "id": 62,
           "options": {
@@ -6779,7 +7338,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 25
+            "y": 30
           },
           "id": 315,
           "options": {
@@ -6880,7 +7439,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 55
+            "y": 60
           },
           "id": 148,
           "options": {
@@ -6997,7 +7556,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 60
           },
           "id": 305,
           "options": {
@@ -7159,7 +7718,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 65
+            "y": 70
           },
           "id": 313,
           "options": {
@@ -7305,7 +7864,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 65
+            "y": 70
           },
           "id": 314,
           "options": {
@@ -7369,7 +7928,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 30
       },
       "id": 349,
       "panels": [
@@ -7434,7 +7993,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 31
           },
           "id": 8,
           "options": {
@@ -7578,7 +8137,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 31
           },
           "id": 7,
           "options": {
@@ -7784,7 +8343,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 41
           },
           "id": 321,
           "options": {
@@ -7912,7 +8471,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 41
           },
           "id": 306,
           "options": {
@@ -8013,7 +8572,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 46
+            "y": 51
           },
           "id": 259,
           "options": {
@@ -8145,7 +8704,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 46
+            "y": 51
           },
           "id": 151,
           "options": {
@@ -8207,7 +8766,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 31
       },
       "id": 350,
       "panels": [
@@ -8293,7 +8852,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 32
           },
           "id": 158,
           "options": {
@@ -8467,7 +9026,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 32
           },
           "id": 300,
           "options": {
@@ -8571,7 +9130,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 42
           },
           "id": 302,
           "options": {
@@ -8672,7 +9231,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 42
           },
           "id": 325,
           "options": {
@@ -8737,7 +9296,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 32
       },
       "id": 351,
       "panels": [
@@ -8878,7 +9437,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 33
           },
           "id": 298,
           "options": {
@@ -9035,7 +9594,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 33
           },
           "id": 331,
           "options": {
@@ -9136,7 +9695,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 38
+            "y": 43
           },
           "id": 297,
           "options": {
@@ -9237,7 +9796,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 38
+            "y": 43
           },
           "id": 332,
           "options": {
@@ -9287,7 +9846,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 33
       },
       "id": 352,
       "panels": [
@@ -9380,7 +9939,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 29
+            "y": 34
           },
           "id": 9,
           "options": {
@@ -9519,7 +10078,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 29
+            "y": 34
           },
           "id": 33,
           "options": {
@@ -9662,7 +10221,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 389
+            "y": 394
           },
           "id": 37,
           "options": {
@@ -9792,7 +10351,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 389
+            "y": 394
           },
           "id": 35,
           "options": {
@@ -9920,7 +10479,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 399
+            "y": 404
           },
           "id": 133,
           "options": {
@@ -10048,7 +10607,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 399
+            "y": 404
           },
           "id": 36,
           "options": {
@@ -10190,7 +10749,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 409
+            "y": 414
           },
           "id": 301,
           "options": {
@@ -10332,7 +10891,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 409
+            "y": 414
           },
           "id": 326,
           "options": {
@@ -10449,7 +11008,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 419
+            "y": 424
           },
           "id": 34,
           "options": {
@@ -10498,7 +11057,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 34
       },
       "id": 353,
       "panels": [
@@ -10594,7 +11153,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 35
           },
           "id": 28,
           "options": {
@@ -10707,7 +11266,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 35
           },
           "id": 41,
           "options": {
@@ -10808,7 +11367,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 370
+            "y": 375
           },
           "id": 44,
           "options": {
@@ -10922,7 +11481,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 370
+            "y": 375
           },
           "id": 219,
           "options": {
@@ -10971,7 +11530,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 35
       },
       "id": 354,
       "panels": [
@@ -11049,7 +11608,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 36
           },
           "id": 60,
           "options": {
@@ -11178,7 +11737,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 36
           },
           "id": 142,
           "options": {
@@ -11305,7 +11864,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 251
+            "y": 256
           },
           "id": 143,
           "options": {
@@ -11432,7 +11991,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 251
+            "y": 256
           },
           "id": 141,
           "options": {
@@ -11545,7 +12104,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 261
+            "y": 266
           },
           "id": 146,
           "options": {
@@ -11645,7 +12204,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 261
+            "y": 266
           },
           "id": 327,
           "options": {
@@ -11745,7 +12304,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 271
+            "y": 276
           },
           "id": 145,
           "options": {
@@ -11859,7 +12418,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 271
+            "y": 276
           },
           "id": 144,
           "options": {
@@ -11986,7 +12545,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 281
+            "y": 286
           },
           "id": 232,
           "options": {
@@ -12086,7 +12645,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 281
+            "y": 286
           },
           "id": 231,
           "options": {
@@ -12187,7 +12746,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 291
+            "y": 296
           },
           "id": 230,
           "options": {
@@ -12318,7 +12877,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 291
+            "y": 296
           },
           "id": 61,
           "options": {
@@ -12430,7 +12989,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 301
+            "y": 306
           },
           "id": 309,
           "options": {
@@ -12512,7 +13071,7 @@
             "h": 10,
             "w": 6,
             "x": 12,
-            "y": 301
+            "y": 306
           },
           "id": 280,
           "options": {
@@ -12587,7 +13146,7 @@
             "h": 10,
             "w": 6,
             "x": 18,
-            "y": 301
+            "y": 306
           },
           "id": 288,
           "options": {
@@ -12643,7 +13202,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 36
       },
       "id": 355,
       "panels": [
@@ -12708,7 +13267,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 37
           },
           "id": 63,
           "options": {
@@ -12852,7 +13411,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 37
           },
           "id": 124,
           "options": {
@@ -12968,7 +13527,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 47
           },
           "id": 126,
           "options": {
@@ -13070,7 +13629,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 47
           },
           "id": 125,
           "options": {
@@ -13186,7 +13745,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 52
+            "y": 57
           },
           "id": 220,
           "options": {
@@ -13314,7 +13873,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 57
           },
           "id": 339,
           "options": {
@@ -13430,7 +13989,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 62
+            "y": 67
           },
           "id": 336,
           "options": {
@@ -13559,7 +14118,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 62
+            "y": 67
           },
           "id": 290,
           "options": {
@@ -13678,7 +14237,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 72
+            "y": 77
           },
           "id": 310,
           "options": {
@@ -13800,7 +14359,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 72
+            "y": 77
           },
           "id": 330,
           "options": {
@@ -13865,7 +14424,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 37
       },
       "id": 356,
       "panels": [
@@ -13943,7 +14502,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 38
           },
           "id": 221,
           "options": {
@@ -14075,7 +14634,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 38
           },
           "id": 299,
           "options": {
@@ -14203,7 +14762,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 63
+            "y": 68
           },
           "id": 55,
           "options": {
@@ -14335,7 +14894,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 63
+            "y": 68
           },
           "id": 115,
           "options": {
@@ -14450,7 +15009,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 73
+            "y": 78
           },
           "id": 104,
           "options": {
@@ -14654,7 +15213,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 73
+            "y": 78
           },
           "id": 109,
           "options": {
@@ -14808,7 +15367,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 83
+            "y": 88
           },
           "id": 50,
           "options": {
@@ -14925,7 +15484,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 83
+            "y": 88
           },
           "id": 91,
           "options": {
@@ -15085,7 +15644,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 98
           },
           "id": 85,
           "options": {
@@ -15199,7 +15758,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 98
           },
           "id": 337,
           "options": {
@@ -15314,7 +15873,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 108
           },
           "id": 82,
           "options": {
@@ -15430,7 +15989,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 108
           },
           "id": 320,
           "options": {
@@ -15588,7 +16147,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 113
+            "y": 118
           },
           "id": 341,
           "options": {
@@ -15753,7 +16312,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 113
+            "y": 118
           },
           "id": 340,
           "options": {
@@ -15815,7 +16374,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 38
       },
       "id": 357,
       "panels": [
@@ -15883,7 +16442,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 39
           },
           "id": 40,
           "options": {
@@ -15983,7 +16542,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 39
           },
           "id": 308,
           "options": {
@@ -16139,7 +16698,7 @@
             "h": 10,
             "w": 10,
             "x": 0,
-            "y": 44
+            "y": 49
           },
           "id": 149,
           "options": {
@@ -16307,7 +16866,7 @@
             "h": 10,
             "w": 10,
             "x": 10,
-            "y": 44
+            "y": 49
           },
           "id": 64,
           "options": {
@@ -16394,7 +16953,7 @@
             "h": 10,
             "w": 4,
             "x": 20,
-            "y": 44
+            "y": 49
           },
           "id": 157,
           "options": {
@@ -16460,45 +17019,41 @@
       "type": "row"
     },
     {
-      "id": 2000,
-      "type": "row",
-      "title": "Discrete GPU (amdgpu)",
       "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 40
       },
+      "id": 2000,
       "panels": [
         {
-          "id": 2001,
-          "type": "timeseries",
-          "title": "GPU Utilization",
           "datasource": {
             "type": "prometheus",
             "uid": "${ds_prometheus}"
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 36
-          },
           "fieldConfig": {
             "defaults": {
-              "unit": "percent",
               "custom": {
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "lineWidth": 1,
                 "showPoints": "never"
               },
+              "max": 100,
               "min": 0,
-              "max": 100
+              "unit": "percent"
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 41
+          },
+          "id": 2001,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -16519,34 +17074,34 @@
               "legendFormat": "busy %",
               "refId": "A"
             }
-          ]
+          ],
+          "title": "GPU Utilization",
+          "type": "timeseries"
         },
         {
-          "id": 2002,
-          "type": "timeseries",
-          "title": "GPU Temperature",
           "datasource": {
             "type": "prometheus",
             "uid": "${ds_prometheus}"
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 36
-          },
           "fieldConfig": {
             "defaults": {
-              "unit": "celsius",
               "custom": {
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "lineWidth": 1,
                 "showPoints": "never"
-              }
+              },
+              "unit": "celsius"
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 41
+          },
+          "id": 2002,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -16567,34 +17122,34 @@
               "legendFormat": "edge",
               "refId": "A"
             }
-          ]
+          ],
+          "title": "GPU Temperature",
+          "type": "timeseries"
         },
         {
-          "id": 2003,
-          "type": "timeseries",
-          "title": "GPU VRAM",
           "datasource": {
             "type": "prometheus",
             "uid": "${ds_prometheus}"
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 44
-          },
           "fieldConfig": {
             "defaults": {
-              "unit": "bytes",
               "custom": {
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "lineWidth": 1,
                 "showPoints": "never"
-              }
+              },
+              "unit": "bytes"
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 49
+          },
+          "id": 2003,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -16624,34 +17179,34 @@
               "legendFormat": "total",
               "refId": "B"
             }
-          ]
+          ],
+          "title": "GPU VRAM",
+          "type": "timeseries"
         },
         {
-          "id": 2004,
-          "type": "timeseries",
-          "title": "GPU Clocks (MHz)",
           "datasource": {
             "type": "prometheus",
             "uid": "${ds_prometheus}"
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 44
-          },
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
               "custom": {
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "lineWidth": 1,
                 "showPoints": "never"
-              }
+              },
+              "unit": "none"
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 49
+          },
+          "id": 2004,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -16681,34 +17236,34 @@
               "legendFormat": "memory",
               "refId": "B"
             }
-          ]
+          ],
+          "title": "GPU Clocks (MHz)",
+          "type": "timeseries"
         },
         {
-          "id": 2005,
-          "type": "timeseries",
-          "title": "GPU Power",
           "datasource": {
             "type": "prometheus",
             "uid": "${ds_prometheus}"
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 52
-          },
           "fieldConfig": {
             "defaults": {
-              "unit": "watt",
               "custom": {
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "lineWidth": 1,
                 "showPoints": "never"
-              }
+              },
+              "unit": "watt"
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 57
+          },
+          "id": 2005,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -16729,9 +17284,13 @@
               "legendFormat": "avg",
               "refId": "A"
             }
-          ]
+          ],
+          "title": "GPU Power",
+          "type": "timeseries"
         }
-      ]
+      ],
+      "title": "Discrete GPU (amdgpu)",
+      "type": "row"
     }
   ],
   "preload": false,
@@ -16867,5 +17426,5 @@
   "timezone": "browser",
   "title": "SteamOS Gaming PC",
   "uid": "rYdddlPWk",
-  "version": 4
+  "version": 5
 }
