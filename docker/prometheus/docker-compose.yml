@@ -1,0 +1,23 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    restart: unless-stopped
+    # Host networking: binds directly to host :9090 and lets Grafana reach
+    # Prometheus at localhost:9090 without creating a dedicated docker network.
+    network_mode: host
+    environment:
+      TZ: "America/Chicago"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # Retain at most 90 days of data to limit disk usage.
+      - "--storage.tsdb.retention.time=90d"
+      - "--web.enable-lifecycle"
+
+volumes:
+  prometheus_data:

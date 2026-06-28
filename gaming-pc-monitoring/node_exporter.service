@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus Node Exporter (user service)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# %h expands to the user's home (/home/deck). Installing under home keeps the
+# binary safe from SteamOS read-only/root-reset behavior on system updates.
+ExecStart=%h/.local/bin/node_exporter
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

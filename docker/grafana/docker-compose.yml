@@ -1,0 +1,20 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    restart: unless-stopped
+    # Host networking: binds directly to host :3000 and reaches Prometheus at
+    # localhost:9090 (also host-networked) without a dedicated docker network.
+    network_mode: host
+    environment:
+      TZ: "America/Chicago"
+      # Change this on first login (or set GF_SECURITY_ADMIN_PASSWORD here).
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning:ro
+
+volumes:
+  grafana_data:

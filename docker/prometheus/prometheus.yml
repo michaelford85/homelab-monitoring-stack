@@ -1,0 +1,22 @@
+# Prometheus configuration for the homelab monitoring stack.
+# Global scrape interval is 15s; retention (90d) is set via a CLI flag in
+# docker-compose.yml, not here.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus scraping itself for self-monitoring.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # SteamOS gaming PC running Node Exporter for hardware metrics.
+  # Replace <STEAMOS_PC_IP> with the LAN IP of the SteamOS machine.
+  # Node Exporter listens on :9100 by default.
+  - job_name: "steamos-pc"
+    static_configs:
+      - targets: ["<STEAMOS_PC_IP>:9100"]
+        labels:
+          host: "steamos-pc"

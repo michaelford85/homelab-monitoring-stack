@@ -1,0 +1,17 @@
+# Dashboard provider. Any dashboard JSON dropped into the path below is
+# auto-loaded by Grafana on startup. A good starting point for Node Exporter
+# is the community dashboard "Node Exporter Full" (Grafana.com ID 1860):
+# import it via the UI, or save its JSON into ./provisioning/dashboards/.
+
+apiVersion: 1
+
+providers:
+  - name: "default"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

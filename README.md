@@ -35,6 +35,12 @@ This repo is my “do it again” playbook: install Uptime Kuma, configure monit
   - [Daily summary script](#daily-summary-script)
   - [systemd service + timer](#systemd-service--timer-1)
 - [AWS nightly stop Lambda exclusion](#aws-nightly-stop-lambda-exclusion)
+- [Prometheus + Grafana metrics stack](#prometheus--grafana-metrics-stack)
+  - [Architecture and port map](#architecture-and-port-map)
+  - [Bringing the stack up](#bringing-the-stack-up)
+  - [Accessing Grafana](#accessing-grafana)
+  - [Onboarding a new scrape target](#onboarding-a-new-scrape-target)
+  - [Monitoring a SteamOS gaming PC](#monitoring-a-steamos-gaming-pc)
 - [Recovery checklist](#recovery-checklist)
 
 ---
@@ -48,12 +54,26 @@ homelab-monitoring-stack/
 ├── scripts/
 │   ├── wg-lan-probe
 │   └── homelab-daily-summary
-└── systemd/
-    ├── wg-lan-probe.service
-    ├── wg-lan-probe.timer
-    ├── homelab-daily-summary.service
-    └── homelab-daily-summary.timer
+├── systemd/
+│   ├── wg-lan-probe.service
+│   ├── wg-lan-probe.timer
+│   ├── homelab-daily-summary.service
+│   └── homelab-daily-summary.timer
+├── docker/
+│   ├── prometheus/                         # compose + scrape config
+│   └── grafana/                            # compose + provisioning
+├── gaming-pc-monitoring/
+│   ├── README.md                           # full SteamOS monitoring guide (shareable)
+│   ├── install-node-exporter.sh            # Node Exporter installer for SteamOS
+│   └── node_exporter.service               # systemd *user* unit for SteamOS
+└── aws/
+    └── stop_ec2_instances_lambda.py
 ```
+
+> **Note:** the Prometheus and Grafana compose files follow this server's
+> `~/docker/<application>` convention. The copies under `docker/` here are for
+> reference/version control; the live files the containers run from are at
+> `~/docker/prometheus/` and `~/docker/grafana/`.
 
 ## Architecture
 
@@ -273,6 +293,110 @@ Use Python **3.13** runtime or greater.
 **File:**: [aws/stop_ec2_instances_lambda.py](./aws/stop_ec2_instances_lambda.py)
 
 > Note: The EC2 probe peer has been decommissioned in favour of the LAN NUC probe. The Lambda is retained here for any future EC2 usage.
+
+---
+
+## Prometheus + Grafana metrics stack
+
+Where Uptime Kuma answers *"is it up?"*, Prometheus + Grafana answer *"how is it
+doing?"* — time-series hardware and service metrics (CPU, RAM, disk, network,
+temperatures) with 90 days of history and graphable dashboards.
+
+The compose files live under the server's `~/docker/<application>` convention:
+
+- `~/docker/prometheus/` — Prometheus compose + `prometheus.yml` scrape config
+- `~/docker/grafana/` — Grafana compose + auto-provisioning (`provisioning/`)
+
+### Architecture and port map
+
+```text
+┌──────────────────────────────┐         ┌─────────────────────────┐
+│  infra01 (homelab server)    │ scrape  │  SteamOS gaming PC      │
+│  Prometheus  :9090  ◀────────┼────15s──┤  Node Exporter  :9100   │
+│      ▲ localhost:9090        │         │  (runs as deck user)    │
+│  Grafana     :3000           │         └─────────────────────────┘
+└──────────────────────────────┘
+```
+
+Both containers use **host networking** (`network_mode: host`). This is a
+deliberate choice that satisfies "don't create a new Docker network":
+
+- They share the host's network namespace — no new bridge network is created.
+- Grafana reaches Prometheus at `localhost:9090`.
+- Prometheus scrapes the SteamOS PC over the LAN at `<STEAMOS_PC_IP>:9100`.
+
+| Service | Port | Status on this host |
+|---|---:|---|
+| Prometheus | `9090` | free — no conflict |
+| Grafana | `3000` | free — no conflict |
+
+Ports already in use that we checked against (`docker ps` / `ss -tlnp`): 22, 53,
+80, 139, 445, 3001 (uptime-kuma), 5006 (actual-budget),
+6789/8080/8443/8843/8880 (unifi), 8001 (tronbyt), 8096 (jellyfin),
+9000/9443 (portainer), 13378 (audiobookshelf).
+
+Persistent data uses **named Docker volumes** (survive container recreation):
+
+- `prometheus_prometheus_data` — TSDB, capped at **90 days** retention
+  (`--storage.tsdb.retention.time=90d`).
+- `grafana_grafana_data` — Grafana DB (users, dashboards, settings).
+
+### Bringing the stack up
+
+Start Prometheus first so the data source is live when Grafana provisions itself:
+
+```bash
+cd ~/docker/prometheus && docker compose up -d
+cd ~/docker/grafana    && docker compose up -d
+docker ps --filter name=prometheus --filter name=grafana
+```
+
+### Accessing Grafana
+
+Open **`http://<HOMELAB_SERVER_IP>:3000`**. Default login `admin` / `admin` —
+**change it on first login** (or set `GF_SECURITY_ADMIN_PASSWORD` before first
+start). The Prometheus data source is **auto-provisioned**, so no manual setup is
+needed. For a full host dashboard, import **Node Exporter Full** (Grafana.com ID
+**1860**): *Dashboards → New → Import → 1860*.
+
+### Onboarding a new scrape target
+
+1. Install an exporter on the target (Node Exporter listens on `9100`).
+2. Add a job to `~/docker/prometheus/prometheus.yml`:
+
+   ```yaml
+     - job_name: "my-new-host"
+       static_configs:
+         - targets: ["<NEW_HOST_IP>:9100"]
+           labels:
+             host: "my-new-host"
+   ```
+
+3. Apply the change by **restarting** Prometheus:
+
+   ```bash
+   cd ~/docker/prometheus && docker compose restart prometheus
+   ```
+
+   > **Why restart instead of hot-reload?** `prometheus.yml` is bind-mounted as a
+   > single file. Editors that save atomically (vim, VS Code, `sed -i`) replace
+   > the file's inode, but the container stays bound to the *old* inode — so a
+   > `curl -X POST http://localhost:9090/-/reload` would re-read stale content and
+   > silently miss your edit. A `docker compose restart` re-binds the mount to the
+   > current file. (Hot-reload only works reliably if you edit the file in place,
+   > e.g. `sed -i` is *not* in place — prefer the restart.)
+
+4. Confirm the target is `UP` at `http://<HOMELAB_SERVER_IP>:9090/targets`.
+
+### Monitoring a SteamOS gaming PC
+
+The first scrape target is a SteamOS PC (referenced generically as
+`steamos-pc`). Because SteamOS has a read-only root filesystem, Node Exporter is
+installed under `/home/deck/` and run as a systemd **user** service so it
+survives system updates and reboots. The full, shareable walkthrough lives in
+[`gaming-pc-monitoring/README.md`](gaming-pc-monitoring/README.md), with the
+installer at
+[`gaming-pc-monitoring/install-node-exporter.sh`](gaming-pc-monitoring/install-node-exporter.sh).
 
 ---
 
