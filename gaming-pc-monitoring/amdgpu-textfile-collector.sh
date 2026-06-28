@@ -55,11 +55,16 @@ rd() { cat "$1" 2>/dev/null; }
 
 emit() {
   local L="card=\"$CARDNAME\",pci=\"$PCI\""
-  local busy vu vt sclk mclk t p
+  local busy vu vt sclk mclk t p tc pw
   busy="$(rd "$DEV/gpu_busy_percent")"
   vu="$(rd "$DEV/mem_info_vram_used")"; vt="$(rd "$DEV/mem_info_vram_total")"
   sclk="$(read_clk "$DEV/pp_dpm_sclk")"; mclk="$(read_clk "$DEV/pp_dpm_mclk")"
-  [[ -n "${HWMON:-}" ]] && { t="$(rd "$HWMON/temp1_input")"; p="$(rd "$HWMON/power1_average")"; }
+  if [[ -n "${HWMON:-}" ]]; then
+    t="$(rd "$HWMON/temp1_input")"; p="$(rd "$HWMON/power1_average")"
+    # scale with awk -v (value passed as a variable, never built into the program)
+    [[ -n "${t:-}" ]] && tc="$(awk -v v="$t" 'BEGIN{printf "%.1f", v/1000}')"
+    [[ -n "${p:-}" ]] && pw="$(awk -v v="$p" 'BEGIN{printf "%.2f", v/1000000}')"
+  fi
 
   {
     echo "# HELP amdgpu_busy_percent Discrete GPU utilization (percent)."
@@ -79,11 +84,13 @@ emit() {
     [[ -n "$mclk" ]] && echo "amdgpu_mclk_mhz{$L} $mclk"
     echo "# HELP amdgpu_temp_celsius Discrete GPU edge temperature (Celsius)."
     echo "# TYPE amdgpu_temp_celsius gauge"
-    [[ -n "${t:-}" ]] && awk "BEGIN{printf \"amdgpu_temp_celsius{$L} %.1f\n\", $t/1000}"
+    [[ -n "${tc:-}" ]] && echo "amdgpu_temp_celsius{$L} $tc"
     echo "# HELP amdgpu_power_watt Discrete GPU average power draw (Watts)."
     echo "# TYPE amdgpu_power_watt gauge"
-    [[ -n "${p:-}" ]] && awk "BEGIN{printf \"amdgpu_power_watt{$L} %.2f\n\", $p/1000000}"
-  } > "${OUT}.tmp.$$" && mv "${OUT}.tmp.$$" "${OUT}"
+    [[ -n "${pw:-}" ]] && echo "amdgpu_power_watt{$L} $pw"
+  } > "${OUT}.tmp.$$"
+  # separate statement so a falsy guard above never blocks the rename
+  mv "${OUT}.tmp.$$" "${OUT}"
 }
 
 while true; do
