@@ -1,0 +1,13 @@
+[Unit]
+Description=AMD discrete GPU metrics -> node_exporter textfile collector
+After=network-online.target
+
+[Service]
+# Runs under the deck user's home (update-proof), writes amdgpu.prom into the
+# node_exporter textfile directory every few seconds.
+ExecStart=%h/.local/bin/amdgpu-textfile-collector.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

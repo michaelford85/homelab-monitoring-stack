@@ -28,6 +28,7 @@ placeholders for everything machine-specific:
 - [Step 2 — Persist it with a systemd user service](#step-2--persist-it-with-a-systemd-user-service)
 - [Step 3 — Add the target to Prometheus](#step-3--add-the-target-to-prometheus)
 - [Step 4 — Build the Grafana dashboard](#step-4--build-the-grafana-dashboard)
+- [Step 5 — Discrete GPU metrics (AMD) — optional](#step-5--discrete-gpu-metrics-amd--optional)
 - [What metrics are available](#what-metrics-are-available)
 - [Troubleshooting](#troubleshooting)
 
@@ -245,6 +246,52 @@ Then open **`http://<HOMELAB_SERVER_IP>:9090/targets`** and confirm the
    `instance`) to view your gaming PC.
 
 You now have live graphs of CPU, memory, disk, network, and temperatures.
+
+---
+
+## Step 5 — Discrete GPU metrics (AMD) — optional
+
+**Node Exporter does not collect GPU usage.** It only surfaces what the kernel
+exposes via `hwmon`, which for an AMD GPU is essentially temperature (and
+sometimes power) — no utilization, VRAM, or clock speeds. To get real GPU stats
+we add a tiny **textfile-collector** sidecar that reads AMD's `sysfs` and lets
+Node Exporter serve the result. No extra service, no root.
+
+It targets the **discrete** GPU only (auto-detected as the `amdgpu` card not on
+PCI bus `0000:00`, since that bus holds the integrated APU graphics).
+
+Run on the SteamOS PC, as `deck`, **after** `install-node-exporter.sh`:
+
+```bash
+chmod +x install-amdgpu-collector.sh
+./install-amdgpu-collector.sh
+```
+
+The installer adds `--collector.textfile.directory` to your Node Exporter unit,
+installs the collector loop (`amdgpu-collector.service`), and prints the metrics
+it captured. Verify:
+
+```bash
+systemctl --user status amdgpu-collector.service
+curl -s localhost:9100/metrics | grep '^amdgpu_'
+```
+
+If the wrong card is picked, pin it: `systemctl --user edit
+amdgpu-collector.service` and add `Environment=GPU_CARD=card1`, then restart.
+
+Exposed metrics (labelled `card`, `pci`):
+
+| Metric | Meaning |
+|---|---|
+| `amdgpu_busy_percent` | GPU utilization % |
+| `amdgpu_vram_used_bytes` / `amdgpu_vram_total_bytes` | VRAM usage |
+| `amdgpu_sclk_mhz` / `amdgpu_mclk_mhz` | Core / memory clock |
+| `amdgpu_temp_celsius` | Edge temperature |
+| `amdgpu_power_watt` | Average power draw |
+
+A pre-built **"Discrete GPU (amdgpu)"** row is included in the provisioned
+dashboard (`docker/grafana/provisioning/dashboards/steamos.json`) — expand it to
+see utilization, temp, VRAM, clocks, and power.
 
 ---
 

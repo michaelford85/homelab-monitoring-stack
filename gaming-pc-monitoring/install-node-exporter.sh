@@ -24,8 +24,10 @@ SERVICE_DIR="${HOME}/.config/systemd/user"
 TARBALL="node_exporter-${VERSION}.${ARCH}.tar.gz"
 URL="https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/${TARBALL}"
 
+TEXTFILE_DIR="${HOME}/.local/node_exporter_textfile"  # sidecar *.prom metrics (e.g. GPU)
+
 echo ">> Installing Node Exporter v${VERSION} for the 'deck' user"
-mkdir -p "${INSTALL_DIR}" "${BIN_DIR}" "${SERVICE_DIR}"
+mkdir -p "${INSTALL_DIR}" "${BIN_DIR}" "${SERVICE_DIR}" "${TEXTFILE_DIR}"
 
 echo ">> Downloading ${URL}"
 cd "${INSTALL_DIR}"
@@ -47,7 +49,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=%h/.local/bin/node_exporter
+ExecStart=%h/.local/bin/node_exporter --collector.textfile.directory=%h/.local/node_exporter_textfile
 Restart=on-failure
 RestartSec=5
 

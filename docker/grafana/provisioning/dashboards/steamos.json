@@ -16458,6 +16458,280 @@
       ],
       "title": "Node Exporter",
       "type": "row"
+    },
+    {
+      "id": 2000,
+      "type": "row",
+      "title": "Discrete GPU (amdgpu)",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "panels": [
+        {
+          "id": 2001,
+          "type": "timeseries",
+          "title": "GPU Utilization",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 36
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never"
+              },
+              "min": 0,
+              "max": 100
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_busy_percent{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "busy %",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2002,
+          "type": "timeseries",
+          "title": "GPU Temperature",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 36
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_temp_celsius{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "edge",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2003,
+          "type": "timeseries",
+          "title": "GPU VRAM",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 44
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_vram_used_bytes{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "used",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_vram_total_bytes{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "total",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 2004,
+          "type": "timeseries",
+          "title": "GPU Clocks (MHz)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 44
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_sclk_mhz{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "core",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_mclk_mhz{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "memory",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 2005,
+          "type": "timeseries",
+          "title": "GPU Power",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_prometheus}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 52
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "watt",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${ds_prometheus}"
+              },
+              "expr": "amdgpu_power_watt{job=\"$job\",instance=\"$node\"}",
+              "legendFormat": "avg",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
     }
   ],
   "preload": false,
@@ -16593,5 +16867,5 @@
   "timezone": "browser",
   "title": "SteamOS Gaming PC",
   "uid": "rYdddlPWk",
-  "version": 3
+  "version": 4
 }

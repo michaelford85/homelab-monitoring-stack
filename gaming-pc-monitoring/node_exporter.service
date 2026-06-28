@@ -6,7 +6,9 @@ Wants=network-online.target
 [Service]
 # %h expands to the user's home (/home/deck). Installing under home keeps the
 # binary safe from SteamOS read-only/root-reset behavior on system updates.
-ExecStart=%h/.local/bin/node_exporter
+# --collector.textfile.directory lets sidecar scripts (e.g. the amdgpu GPU
+# collector) drop *.prom files that node_exporter serves on :9100.
+ExecStart=%h/.local/bin/node_exporter --collector.textfile.directory=%h/.local/node_exporter_textfile
 Restart=on-failure
 RestartSec=5
 
