@@ -300,7 +300,9 @@ Use Python **3.13** runtime or greater.
 <p align="center">
   <img src="images/grafana_dashboard_health.png" alt="SteamOS PC Hardware Health" width="800">
 </p>
-
+<p align="center">
+  <img src="images/gpu_arkham_city.png" alt="Grafana During Arkham City" width="800">
+</p>
 Where Uptime Kuma answers *"is it up?"*, Prometheus + Grafana answer *"how is it
 doing?"* — time-series hardware and service metrics (CPU, RAM, disk, network,
 temperatures) with 90 days of history and graphable dashboards.
